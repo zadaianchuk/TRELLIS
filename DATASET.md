@@ -85,7 +85,7 @@ After downloading, update the metadata file with:
 python dataset_toolkits/build_metadata.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab
 ```
 
-### Step 4: Render Multiview Images
+### Step 4: Render Multiview Images (& Calculate Aesthetic Scores)
 
 Multiview images can be rendered with:
 
@@ -103,6 +103,14 @@ For example, to render the ObjaverseXL (sketchfab) subset and save it to `datase
 ```
 python dataset_toolkits/render.py ObjaverseXL --output_dir datasets/ObjaverseXL_sketchfab
 ```
+
+(Optional) If you want to calculate the aesthetic scores of your own rendered datasets, you can use the following command:
+
+```
+python dataset_toolkits/calculate_aesthetic_scores.py --output_dir <OUTPUT_DIR> [--rank <RANK> --world_size <WORLD_SIZE>]
+```
+- `OUTPUT_DIR`: The directory to save the data.
+- `RANK` and `WORLD_SIZE`: Multi-node configuration.
 
 Don't forget to update the metadata file with:
 

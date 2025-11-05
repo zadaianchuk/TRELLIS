@@ -116,6 +116,21 @@ if __name__ == '__main__':
         for f in df_files:
             shutil.move(os.path.join(opt.output_dir, f), os.path.join(opt.output_dir, 'merged_records', f'{timestamp}_{f}'))
     
+    # merge aesthetic scores
+    df_files = [f for f in os.listdir(opt.output_dir) if f.startswith('aesthetic_scores_') and f.endswith('.csv')]
+    df_parts = []
+    for f in df_files:
+        try:
+            df_parts.append(pd.read_csv(os.path.join(opt.output_dir, f)))
+        except:
+            pass
+    if len(df_parts) > 0:
+        df = pd.concat(df_parts)
+        df.set_index('sha256', inplace=True)
+        metadata.update(df, overwrite=True)
+        for f in df_files:
+            shutil.move(os.path.join(opt.output_dir, f), os.path.join(opt.output_dir, 'merged_records', f'{timestamp}_{f}'))
+    
     # merge voxelized
     df_files = [f for f in os.listdir(opt.output_dir) if f.startswith('voxelized_') and f.endswith('.csv')]
     df_parts = []
