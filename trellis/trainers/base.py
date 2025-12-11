@@ -8,8 +8,26 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader
 import numpy as np
 
+
+class NumpyEncoder(json.JSONEncoder):
+    """Custom JSON encoder for numpy types."""
+    def default(self, obj):
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
 from torchvision import utils
 from torch.utils.tensorboard import SummaryWriter
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+    print("Warning: wandb not installed. Install with 'pip install wandb' to enable Weights & Biases logging.")
 
 from .utils import *
 from ..utils.general_utils import *
@@ -46,6 +64,10 @@ class Trainer:
         i_sample=10000,
         i_save=10000,
         i_ddpcheck=10000,
+        use_wandb=False,
+        wandb_project=None,
+        wandb_name=None,
+        wandb_config=None,
         **kwargs
     ):
         assert batch_size is not None or batch_size_per_gpu is not None, 'Either batch_size or batch_size_per_gpu must be specified.'
@@ -71,7 +93,11 @@ class Trainer:
         self.i_log = i_log
         self.i_sample = i_sample
         self.i_save = i_save
-        self.i_ddpcheck = i_ddpcheck        
+        self.i_ddpcheck = i_ddpcheck
+        self.use_wandb = use_wandb and WANDB_AVAILABLE
+        self.wandb_project = wandb_project
+        self.wandb_name = wandb_name
+        self.wandb_config = wandb_config
 
         if dist.is_initialized():
             # Multi-GPU params
@@ -105,6 +131,35 @@ class Trainer:
             os.makedirs(os.path.join(self.output_dir, 'ckpts'), exist_ok=True)
             os.makedirs(os.path.join(self.output_dir, 'samples'), exist_ok=True)
             self.writer = SummaryWriter(os.path.join(self.output_dir, 'tb_logs'))
+            
+            # Initialize Weights & Biases
+            if self.use_wandb:
+                # Prepare wandb config
+                wandb_cfg = {
+                    'batch_size': self.batch_size,
+                    'batch_size_per_gpu': self.batch_size_per_gpu,
+                    'batch_split': self.batch_split,
+                    'max_steps': self.max_steps,
+                    'optimizer': self.optimizer_config,
+                    'lr_scheduler': self.lr_scheduler_config,
+                    'grad_clip': self.grad_clip,
+                    'ema_rate': self.ema_rate,
+                    'fp16_mode': self.fp16_mode,
+                }
+                # Merge with user-provided config
+                if self.wandb_config is not None:
+                    wandb_cfg.update(self.wandb_config)
+                
+                # Initialize wandb
+                wandb.init(
+                    project=self.wandb_project or 'trellis-training',
+                    name=self.wandb_name or os.path.basename(self.output_dir),
+                    config=wandb_cfg,
+                    dir=self.output_dir,
+                    resume='allow',
+                    id=self.wandb_name or os.path.basename(self.output_dir),
+                )
+                print(f'\nWeights & Biases initialized: {wandb.run.url}')
 
         if self.world_size > 1:
             self.check_ddp()
@@ -413,17 +468,22 @@ class Trainer:
                 if self.step % self.i_log == 0:
                     ## save to log file
                     log_str = '\n'.join([
-                        f'{step}: {json.dumps(log)}' for step, log in log
+                        f'{step}: {json.dumps(log, cls=NumpyEncoder)}' for step, log in log
                     ])
                     with open(os.path.join(self.output_dir, 'log.txt'), 'a') as log_file:
                         log_file.write(log_str + '\n')
 
-                    # show with mlflow
+                    # show with tensorboard and wandb
                     log_show = [l for _, l in log if not dict_any(l, lambda x: np.isnan(x))]
                     log_show = dict_reduce(log_show, lambda x: np.mean(x))
                     log_show = dict_flatten(log_show, sep='/')
                     for key, value in log_show.items():
                         self.writer.add_scalar(key, value, self.step)
+                    
+                    # Log to wandb
+                    if self.use_wandb:
+                        wandb.log(log_show, step=self.step)
+                    
                     log = []
 
                 # Save checkpoint
@@ -433,6 +493,8 @@ class Trainer:
         if self.is_master:
             self.snapshot(suffix='final')
             self.writer.close()
+            if self.use_wandb:
+                wandb.finish()
             print('Training finished.')
             
     def profile(self, wait=2, warmup=3, active=5):

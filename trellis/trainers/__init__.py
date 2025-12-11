@@ -13,11 +13,17 @@ __attributes = {
     'FlowMatchingCFGTrainer': 'flow_matching.flow_matching',
     'TextConditionedFlowMatchingCFGTrainer': 'flow_matching.flow_matching',
     'ImageConditionedFlowMatchingCFGTrainer': 'flow_matching.flow_matching',
+    'NoisyImageConditionedFlowMatchingCFGTrainer': 'flow_matching.flow_matching',
+    'LoRAImageConditionedFlowMatchingCFGTrainer': 'flow_matching.flow_matching',
+    'LoRANoisyImageConditionedFlowMatchingCFGTrainer': 'flow_matching.flow_matching',
     
     'SparseFlowMatchingTrainer': 'flow_matching.sparse_flow_matching',
     'SparseFlowMatchingCFGTrainer': 'flow_matching.sparse_flow_matching',
     'TextConditionedSparseFlowMatchingCFGTrainer': 'flow_matching.sparse_flow_matching',
     'ImageConditionedSparseFlowMatchingCFGTrainer': 'flow_matching.sparse_flow_matching',
+    'NoisyImageConditionedSparseFlowMatchingCFGTrainer': 'flow_matching.sparse_flow_matching',
+    'LoRAImageConditionedSparseFlowMatchingCFGTrainer': 'flow_matching.sparse_flow_matching',
+    'LoRANoisyImageConditionedSparseFlowMatchingCFGTrainer': 'flow_matching.sparse_flow_matching',
 }
 
 __submodules = []
@@ -53,6 +59,9 @@ if __name__ == '__main__':
         FlowMatchingCFGTrainer,
         TextConditionedFlowMatchingCFGTrainer,
         ImageConditionedFlowMatchingCFGTrainer,
+        NoisyImageConditionedFlowMatchingCFGTrainer,
+        LoRAImageConditionedFlowMatchingCFGTrainer,
+        LoRANoisyImageConditionedFlowMatchingCFGTrainer,
     )
     
     from .flow_matching.sparse_flow_matching import (
@@ -60,4 +69,7 @@ if __name__ == '__main__':
         SparseFlowMatchingCFGTrainer,
         TextConditionedSparseFlowMatchingCFGTrainer,
         ImageConditionedSparseFlowMatchingCFGTrainer,
+        NoisyImageConditionedSparseFlowMatchingCFGTrainer,
+        LoRAImageConditionedSparseFlowMatchingCFGTrainer,
+        LoRANoisyImageConditionedSparseFlowMatchingCFGTrainer,
     )

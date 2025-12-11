@@ -18,8 +18,8 @@ BLENDER_PATH = f'{BLENDER_INSTALLATION_PATH}/blender-3.0.1-linux-x64/blender'
 
 def _install_blender():
     if not os.path.exists(BLENDER_PATH):
-        os.system('sudo apt-get update')
-        os.system('sudo apt-get install -y libxrender1 libxi6 libxkbcommon-x11-0 libsm6')
+        # os.system('sudo apt-get update')
+        # os.system('sudo apt-get install -y libxrender1 libxi6 libxkbcommon-x11-0 libsm6')
         os.system(f'wget {BLENDER_LINK} -P {BLENDER_INSTALLATION_PATH}')
         os.system(f'tar -xvf {BLENDER_INSTALLATION_PATH}/blender-3.0.1-linux-x64.tar.xz -C {BLENDER_INSTALLATION_PATH}')
 
@@ -46,7 +46,7 @@ def _render_cond(file_path, sha256, output_dir, num_views):
     views = [{'yaw': y, 'pitch': p, 'radius': r, 'fov': f} for y, p, r, f in zip(yaws, pitchs, radius, fov)]
     
     args = [
-        BLENDER_PATH, '-b', '-P', os.path.join(os.path.dirname(__file__), 'blender_script', 'render.py'),
+        BLENDER_PATH, '-b', '-noaudio', '-P', os.path.join(os.path.dirname(__file__), 'blender_script', 'render.py'),
         '--',
         '--views', json.dumps(views),
         '--object', os.path.expanduser(file_path),

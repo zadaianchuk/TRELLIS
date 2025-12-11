@@ -84,7 +84,17 @@ def main(local_rank, cfg):
                 print(model_summary, file=fp)
 
     # Build trainer
-    trainer = getattr(trainers, cfg.trainer.name)(model_dict, dataset, **cfg.trainer.args, output_dir=cfg.output_dir, load_dir=cfg.load_dir, step=cfg.load_ckpt)
+    wandb_kwargs = {}
+    if hasattr(cfg, 'use_wandb'):
+        wandb_kwargs['use_wandb'] = cfg.use_wandb
+    if hasattr(cfg, 'wandb_project'):
+        wandb_kwargs['wandb_project'] = cfg.wandb_project
+    if hasattr(cfg, 'wandb_name'):
+        wandb_kwargs['wandb_name'] = cfg.wandb_name
+    if hasattr(cfg, 'wandb_config'):
+        wandb_kwargs['wandb_config'] = cfg.wandb_config
+    
+    trainer = getattr(trainers, cfg.trainer.name)(model_dict, dataset, **cfg.trainer.args, output_dir=cfg.output_dir, load_dir=cfg.load_dir, step=cfg.load_ckpt, **wandb_kwargs)
 
     # Train
     if not cfg.tryrun:
@@ -104,7 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('--load_dir', type=str, default='', help='Load directory, default to output_dir')
     parser.add_argument('--ckpt', type=str, default='latest', help='Checkpoint step to resume training, default to latest')
     parser.add_argument('--data_dir', type=str, default='./data/', help='Data directory')
-    parser.add_argument('--auto_retry', type=int, default=3, help='Number of retries on error')
+    parser.add_argument('--auto_retry', type=int, default=0, help='Number of retries on error')
     ## dubug
     parser.add_argument('--tryrun', action='store_true', help='Try run without training')
     parser.add_argument('--profile', action='store_true', help='Profile training')
@@ -114,6 +124,10 @@ if __name__ == '__main__':
     parser.add_argument('--num_gpus', type=int, default=-1, help='Number of GPUs per node, default to all')
     parser.add_argument('--master_addr', type=str, default='localhost', help='Master address for distributed training')
     parser.add_argument('--master_port', type=str, default='12345', help='Port for distributed training')
+    ## wandb
+    parser.add_argument('--use_wandb', action='store_true', help='Enable Weights & Biases logging')
+    parser.add_argument('--wandb_project', type=str, default='trellis-training', help='W&B project name')
+    parser.add_argument('--wandb_name', type=str, default=None, help='W&B run name (defaults to output_dir name)')
     opt = parser.parse_args()
     opt.load_dir = opt.load_dir if opt.load_dir != '' else opt.output_dir
     opt.num_gpus = torch.cuda.device_count() if opt.num_gpus == -1 else opt.num_gpus

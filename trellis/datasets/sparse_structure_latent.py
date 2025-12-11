@@ -152,6 +152,13 @@ class SparseStructureLatent(SparseStructureLatentVisMixin, StandardDatasetBase):
         if self.normalization is not None:
             self.mean = torch.tensor(self.normalization['mean']).reshape(-1, 1, 1, 1)
             self.std = torch.tensor(self.normalization['std']).reshape(-1, 1, 1, 1)
+        
+        # Add loads attribute for BalancedResumableSampler (based on num_voxels if available)
+        if 'num_voxels' in self.metadata.columns:
+            self.loads = [self.metadata.loc[sha256]['num_voxels'] for _, sha256 in self.instances]
+        else:
+            # Default uniform load if num_voxels not available
+            self.loads = [1.0] * len(self.instances)
   
     def filter_metadata(self, metadata):
         stats = {}

@@ -12,6 +12,7 @@ from ...utils.general_utils import dict_reduce
 from .mixins.classifier_free_guidance import ClassifierFreeGuidanceMixin
 from .mixins.text_conditioned import TextConditionedMixin
 from .mixins.image_conditioned import ImageConditionedMixin
+from .mixins.noisy_image_conditioned import NoisyImageConditionedMixin
 
 
 class FlowMatchingTrainer(BasicTrainer):
@@ -349,5 +350,101 @@ class ImageConditionedFlowMatchingCFGTrainer(ImageConditionedMixin, FlowMatching
         sigma_min (float): Minimum noise level.
         p_uncond (float): Probability of dropping conditions.
         image_cond_model (str): Image conditioning model.
+    """
+    pass
+
+
+class NoisyImageConditionedFlowMatchingCFGTrainer(NoisyImageConditionedMixin, FlowMatchingCFGTrainer):
+    """
+    Trainer for image-conditioned diffusion model with RAE-style noisy conditioning.
+    
+    This trainer adds Gaussian noise to the encoded image features during training,
+    following the approach from RAE (Representation Autoencoders) paper.
+    This can improve robustness to variations in conditioning features.
+    
+    Reference: https://github.com/bytetriper/RAE
+    
+    Args:
+        models (dict[str, nn.Module]): Models to train.
+        dataset (torch.utils.data.Dataset): Dataset.
+        output_dir (str): Output directory.
+        load_dir (str): Load directory.
+        step (int): Step to load.
+        batch_size (int): Batch size.
+        batch_size_per_gpu (int): Batch size per GPU. If specified, batch_size will be ignored.
+        batch_split (int): Split batch with gradient accumulation.
+        max_steps (int): Max steps.
+        optimizer (dict): Optimizer config.
+        lr_scheduler (dict): Learning rate scheduler config.
+        elastic (dict): Elastic memory management config.
+        grad_clip (float or dict): Gradient clip config.
+        ema_rate (float or list): Exponential moving average rates.
+        fp16_mode (str): FP16 mode.
+            - None: No FP16.
+            - 'inflat_all': Hold a inflated fp32 master param for all params.
+            - 'amp': Automatic mixed precision.
+        fp16_scale_growth (float): Scale growth for FP16 gradient backpropagation.
+        finetune_ckpt (dict): Finetune checkpoint.
+        log_param_stats (bool): Log parameter stats.
+        i_print (int): Print interval.
+        i_log (int): Log interval.
+        i_sample (int): Sample interval.
+        i_save (int): Save interval.
+        i_ddpcheck (int): DDP check interval.
+
+        t_schedule (dict): Time schedule for flow matching.
+        sigma_min (float): Minimum noise level.
+        p_uncond (float): Probability of dropping conditions.
+        image_cond_model (str): Image conditioning model.
+        cond_noise_std (float): Standard deviation of noise to add to conditioning features.
+        cond_noise_std_min (float): Minimum noise std when using uniform sampling.
+        cond_noise_std_max (float): Maximum noise std when using uniform sampling.
+        cond_noise_schedule (str): Type of noise schedule ('fixed', 'uniform', 'lognormal').
+        cond_noise_enabled (bool): Whether to enable noise injection during training.
+    """
+    pass
+
+
+# ============================================================================
+# LoRA-enabled trainers
+# ============================================================================
+from .mixins.lora_mixin import LoRAMixin
+
+
+class LoRAImageConditionedFlowMatchingCFGTrainer(LoRAMixin, ImageConditionedFlowMatchingCFGTrainer):
+    """
+    LoRA-enabled trainer for image-conditioned diffusion with flow matching.
+    
+    Uses Low-Rank Adaptation (LoRA) for efficient fine-tuning with significantly
+    fewer trainable parameters. Based on DSO paper approach.
+    
+    Reference: https://github.com/RuiningLi/dso
+    
+    Additional Args (beyond ImageConditionedFlowMatchingCFGTrainer):
+        use_lora (bool): Whether to use LoRA adapters. Default: False.
+        lora_r (int): LoRA rank. Default: 64.
+        lora_alpha (int): LoRA scaling factor. Default: 128.
+        lora_dropout (float): LoRA dropout rate. Default: 0.0.
+        lora_target_modules (list): Module names to apply LoRA to.
+            Default: ["to_q", "to_kv", "to_out", "to_qkv"]
+        lora_models (list): Model names to apply LoRA to. Default: ["denoiser"]
+    """
+    pass
+
+
+class LoRANoisyImageConditionedFlowMatchingCFGTrainer(LoRAMixin, NoisyImageConditionedFlowMatchingCFGTrainer):
+    """
+    LoRA-enabled trainer for noisy image-conditioned diffusion with flow matching.
+    
+    Combines LoRA adapters with noisy image conditioning for robust fine-tuning.
+    
+    Additional Args (beyond NoisyImageConditionedFlowMatchingCFGTrainer):
+        use_lora (bool): Whether to use LoRA adapters. Default: False.
+        lora_r (int): LoRA rank. Default: 64.
+        lora_alpha (int): LoRA scaling factor. Default: 128.
+        lora_dropout (float): LoRA dropout rate. Default: 0.0.
+        lora_target_modules (list): Module names to apply LoRA to.
+            Default: ["to_q", "to_kv", "to_out", "to_qkv"]
+        lora_models (list): Model names to apply LoRA to. Default: ["denoiser"]
     """
     pass
